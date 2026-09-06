@@ -1,7 +1,35 @@
-*/*.pyc
-*/**/*.pyc
-*/**/**/*.pyc
-*/**/**/**/*.pyc
-*/**/**/**/**/*.pyc
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
 
-./__pycache__
+# Model checkpoints and weights (large files)
+checkpoints/
+checkpoints_adv/
+checkpoints_test/
+checkpoints_adv_test/
+*.pth
+*.pt
+*.onnx
+
+# Dataset directories & archives
+SEN12MSCRTS/
+SEN12MSCR/
+*.tar.gz
+*.zip
+*.tif
+*.tiff
+
+# Output benchmark results and test folders
+benchmark_results/
+benchmark_results_test/
+results_eval/
+results_test/
+results/
+
+# Environment / IDE
+.vscode/
+.idea/
+*.log
+
