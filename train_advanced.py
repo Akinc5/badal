@@ -143,6 +143,9 @@ def main():
         lambda_ssim=0.2
     ).to(device)
 
+    optimizer = optim.AdamW(model.parameters(), lr=args.lr, weight_decay=args.weight_decay)
+    scheduler = CosineAnnealingLR(optimizer, T_max=args.epochs, eta_min=1e-6)
+
     sam_eval = MaskedSpectralAngleMapperLoss().to(device)
     # Setup AMP Scaler (using modern torch.amp with fallback)
     device_type = 'cuda' if device.type == 'cuda' else 'cpu'
