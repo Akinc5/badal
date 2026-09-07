@@ -312,95 +312,936 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>SEN12MS-CR-TS Cloud Removal Studio</title>
+<title>BADAL // SAR + Optical Cloud Removal Studio</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
 <style>
-* { box-sizing: border-box; margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; }
-body { background: #0b0f19; color: #f1f5f9; min-height: 100vh; display: flex; flex-direction: column; }
-header { background: #111827; border-bottom: 1px solid #1f2937; padding: 1rem 2rem; display: flex; justify-content: space-between; align-items: center; }
-.logo { font-size: 1.3rem; font-weight: 700; color: #38bdf8; display: flex; align-items: center; gap: 0.5rem; }
-.badge { background: #0369a1; color: #e0f2fe; padding: 0.35rem 0.8rem; border-radius: 9999px; font-size: 0.8rem; font-weight: 600; border: 1px solid #0284c7; }
-main { flex: 1; padding: 2rem; max-width: 1400px; margin: 0 auto; width: 100%; }
-.controls-card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 1.25rem; display: flex; gap: 1rem; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; }
-select, button, .upload-btn { background: #1f2937; color: #f8fafc; border: 1px solid #374151; padding: 0.6rem 1.2rem; border-radius: 8px; font-size: 0.95rem; cursor: pointer; transition: all 0.2s; font-weight: 500; display: inline-flex; align-items: center; gap: 0.5rem; }
-button:hover, .upload-btn:hover { background: #2563eb; border-color: #3b82f6; }
-button:active, .upload-btn:active { transform: scale(0.98); }
-.stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1rem; margin-bottom: 1.5rem; }
-.stat-box { background: #111827; border: 1px solid #1f2937; border-radius: 12px; padding: 1.25rem; text-align: center; }
-.stat-val { font-size: 1.8rem; font-weight: 700; color: #38bdf8; }
-.stat-label { font-size: 0.85rem; color: #94a3b8; margin-top: 0.25rem; }
+:root {
+  --off-black: #0a0c12;
+  --off-black-elevated: #11141f;
+  --off-black-surface: #171b29;
+  --off-white: #e9ecee;
+  --color-secondary: #aab9c7;
+  --gray: #6e8799;
+  --dark-gray: #4c5e6b;
+  --border: rgba(233, 236, 238, 0.12);
+  --border-focus: rgba(0, 240, 255, 0.45);
+  --cyan-glow: #00f0ff;
+  --emerald: #00e5a3;
+  --amber: #ffaa40;
+  --crimson: #ff4757;
+  --font-serif: 'Cinzel', serif;
+  --font-sans: 'Space Grotesk', -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+  --expo-out: cubic-bezier(0.14, 1, 0.34, 1);
+  --quint-out: cubic-bezier(0.23, 1, 0.32, 1);
+}
 
-.visualizer-container { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
-.img-card { background: #111827; border: 1px solid #1f2937; border-radius: 12px; overflow: hidden; display: flex; flex-direction: column; transition: border-color 0.2s; }
-.img-card:hover { border-color: #38bdf8; }
-.img-card-header { padding: 0.75rem 1rem; background: #1f2937; font-size: 0.9rem; font-weight: 600; color: #cbd5e1; display: flex; justify-content: space-between; align-items: center; }
-.img-wrapper { width: 100%; aspect-ratio: 1/1; background: #0f172a; position: relative; overflow: hidden; display: flex; align-items: center; justify-content: center; }
-.img-wrapper img { width: 100%; height: 100%; object-fit: cover; display: block; }
-.tag-input { color: #f87171; background: rgba(239,68,68,0.15); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
-.tag-radar { color: #fbbf24; background: rgba(245,158,11,0.15); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
-.tag-mask { color: #38bdf8; background: rgba(56,189,248,0.15); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
-.tag-output { color: #4ade80; background: rgba(74,222,128,0.15); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
-.tag-truth { color: #a78bfa; background: rgba(167,139,250,0.15); padding: 2px 8px; border-radius: 4px; font-size: 0.75rem; }
-.status-msg { margin-left: auto; color: #94a3b8; font-size: 0.9rem; }
-.upload-input { display: none; }
+*, *::before, *::after {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  background-color: var(--off-black);
+  color: var(--off-white);
+  font-family: var(--font-sans);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow-x: hidden;
+  position: relative;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Background Canvas & Noise */
+#ambientCanvas {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.6;
+}
+
+.noise-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-image: radial-gradient(rgba(255,255,255,0.03) 1px, transparent 0);
+  background-size: 24px 24px;
+  pointer-events: none;
+  z-index: 1;
+}
+
+/* Header & Navigation */
+header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  background: rgba(10, 12, 18, 0.85);
+  border-bottom: 1px solid var(--border);
+  padding: 1.25rem 2.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.logo-group {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+}
+
+.logo-mark {
+  width: 32px;
+  height: 32px;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: var(--off-black-elevated);
+  box-shadow: 0 0 15px rgba(0, 240, 255, 0.15);
+}
+
+.logo-text {
+  font-family: var(--font-serif);
+  font-size: 1.15rem;
+  letter-spacing: 0.2em;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: var(--off-white);
+}
+
+.logo-text span {
+  color: var(--gray);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.25em;
+  margin-left: 0.5rem;
+  font-weight: 400;
+}
+
+.header-actions {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+}
+
+/* Overworld Sound Toggle */
+.sound-toggle {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.5rem 0.9rem;
+  color: var(--off-white);
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  cursor: pointer;
+  transition: all 0.3s var(--expo-out);
+}
+
+.sound-toggle:hover {
+  border-color: var(--cyan-glow);
+  box-shadow: 0 0 12px rgba(0, 240, 255, 0.2);
+}
+
+.sound-waves {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+  height: 12px;
+}
+
+.sound-bar {
+  width: 2px;
+  height: 100%;
+  background: var(--cyan-glow);
+  border-radius: 1px;
+  animation: wave 1.2s ease-in-out infinite alternate;
+}
+.sound-bar:nth-child(2) { animation-delay: 0.2s; height: 70%; }
+.sound-bar:nth-child(3) { animation-delay: 0.4s; height: 40%; }
+.sound-bar:nth-child(4) { animation-delay: 0.1s; height: 90%; }
+.sound-toggle.muted .sound-bar {
+  animation: none;
+  height: 3px;
+  background: var(--dark-gray);
+}
+
+@keyframes wave {
+  0% { transform: scaleY(0.2); }
+  100% { transform: scaleY(1); }
+}
+
+.badge-model {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  background: rgba(0, 229, 163, 0.08);
+  color: var(--emerald);
+  border: 1px solid rgba(0, 229, 163, 0.25);
+  padding: 0.45rem 0.85rem;
+  border-radius: 4px;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: var(--emerald);
+  box-shadow: 0 0 8px var(--emerald);
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50% { opacity: 0.4; transform: scale(0.85); }
+}
+
+/* Main Layout */
+main {
+  position: relative;
+  z-index: 10;
+  flex: 1;
+  max-width: 1540px;
+  margin: 0 auto;
+  width: 100%;
+  padding: 2.5rem 2rem 5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 2.5rem;
+}
+
+/* Hero Title Section */
+.hero-section {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  border-bottom: 1px solid var(--border);
+  padding-bottom: 2rem;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.hero-title-group h1 {
+  font-family: var(--font-serif);
+  font-size: clamp(2rem, 3.5vw, 3.2rem);
+  font-weight: 500;
+  letter-spacing: 0.05em;
+  line-height: 1.1;
+  margin-bottom: 0.6rem;
+  background: linear-gradient(180deg, #ffffff 0%, #aab9c7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero-title-group p {
+  color: var(--gray);
+  font-size: 0.95rem;
+  letter-spacing: 0.05em;
+  max-width: 640px;
+  line-height: 1.6;
+}
+
+/* HUD Controls Bar */
+.hud-bar {
+  background: var(--off-black-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 1.25rem 1.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1.5rem;
+  flex-wrap: wrap;
+  box-shadow: 0 10px 30px rgba(0,0,0,0.4);
+}
+
+.control-cluster {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  flex-wrap: wrap;
+}
+
+.control-label {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  color: var(--gray);
+  text-transform: uppercase;
+}
+
+/* Overworld Capsule Buttons */
+.btn-capsule {
+  background: transparent;
+  color: var(--off-white);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.7rem 1.4rem;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  transition: all 0.3s var(--expo-out);
+  position: relative;
+  overflow: hidden;
+  text-decoration: none;
+}
+
+.btn-capsule::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: var(--off-white);
+  opacity: 0;
+  transition: opacity 0.3s ease;
+  z-index: -1;
+}
+
+.btn-capsule:hover {
+  color: var(--off-black);
+  border-color: var(--off-white);
+}
+
+.btn-capsule:hover::before {
+  opacity: 1;
+}
+
+.btn-capsule--cyan {
+  border-color: rgba(0, 240, 255, 0.4);
+  color: var(--cyan-glow);
+}
+.btn-capsule--cyan:hover {
+  background: var(--cyan-glow);
+  color: var(--off-black);
+  border-color: var(--cyan-glow);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+}
+.btn-capsule--cyan:hover::before { display: none; }
+
+select.custom-select {
+  background: var(--off-black-surface);
+  color: var(--off-white);
+  border: 1px solid var(--border);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  padding: 0.7rem 1.2rem;
+  border-radius: 4px;
+  outline: none;
+  cursor: pointer;
+  transition: border-color 0.3s;
+}
+
+select.custom-select:focus {
+  border-color: var(--cyan-glow);
+}
+
+.upload-input-hidden {
+  display: none;
+}
+
+.status-telemetry {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--gray);
+  letter-spacing: 0.1em;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+/* Telemetry Grid */
+.telemetry-grid {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 1.25rem;
+}
+
+@media(max-width: 900px) {
+  .telemetry-grid { grid-template-columns: repeat(2, 1fr); }
+}
+
+.telemetry-card {
+  background: var(--off-black-elevated);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 1.4rem 1.6rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.telemetry-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, var(--cyan-glow), transparent);
+  opacity: 0.2;
+}
+
+.telemetry-label {
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.25em;
+  text-transform: uppercase;
+  color: var(--gray);
+}
+
+.telemetry-val {
+  font-family: var(--font-sans);
+  font-size: 2rem;
+  font-weight: 600;
+  color: var(--off-white);
+  letter-spacing: -0.02em;
+}
+
+.telemetry-sub {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  color: var(--emerald);
+  letter-spacing: 0.05em;
+}
+
+/* Interactive Split Before/After Comparator */
+.comparator-section {
+  background: var(--off-black-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+}
+
+.section-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.section-title {
+  font-family: var(--font-serif);
+  font-size: 1.25rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--off-white);
+}
+
+.split-container {
+  position: relative;
+  width: 100%;
+  height: 480px;
+  border-radius: 6px;
+  overflow: hidden;
+  user-select: none;
+  cursor: ew-resize;
+  border: 1px solid var(--border);
+  background: #000;
+}
+
+.split-layer {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+}
+
+.split-layer img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  pointer-events: none;
+}
+
+.split-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  height: 100%;
+  width: 50%;
+  overflow: hidden;
+  border-right: 2px solid var(--cyan-glow);
+  box-shadow: 0 0 20px rgba(0, 240, 255, 0.4);
+}
+
+.split-overlay img {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.split-handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 42px;
+  height: 42px;
+  background: var(--off-black);
+  border: 2px solid var(--cyan-glow);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--cyan-glow);
+  pointer-events: none;
+  box-shadow: 0 0 25px rgba(0, 240, 255, 0.6);
+  font-size: 0.8rem;
+  z-index: 20;
+}
+
+.layer-badge {
+  position: absolute;
+  bottom: 1.2rem;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  padding: 0.4rem 0.8rem;
+  border-radius: 4px;
+  background: rgba(10, 12, 18, 0.8);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border);
+  z-index: 10;
+}
+.layer-badge--left { left: 1.2rem; color: var(--crimson); }
+.layer-badge--right { right: 1.2rem; color: var(--emerald); }
+
+/* 6-Grid Multi-Spectral Array */
+.array-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1.5rem;
+}
+
+@media(max-width: 1100px) {
+  .array-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media(max-width: 650px) {
+  .array-grid { grid-template-columns: 1fr; }
+}
+
+.spectral-card {
+  background: var(--off-black-elevated);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  transition: all 0.3s var(--expo-out);
+}
+
+.spectral-card:hover {
+  border-color: rgba(233, 236, 238, 0.3);
+  transform: translateY(-2px);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+}
+
+.card-header {
+  padding: 0.9rem 1.2rem;
+  background: rgba(23, 27, 41, 0.5);
+  border-bottom: 1px solid var(--border);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.card-title {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.1em;
+  color: var(--off-white);
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.spectral-tag {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+  padding: 0.2rem 0.6rem;
+  border-radius: 3px;
+  border: 1px solid;
+}
+
+.tag-optical { color: #ff6b81; border-color: rgba(255, 107, 129, 0.3); background: rgba(255, 107, 129, 0.08); }
+.tag-sar { color: #eccc68; border-color: rgba(236, 204, 104, 0.3); background: rgba(236, 204, 104, 0.08); }
+.tag-mask { color: #70a1ff; border-color: rgba(112, 161, 255, 0.3); background: rgba(112, 161, 255, 0.08); }
+.tag-neural { color: #a55eea; border-color: rgba(165, 94, 234, 0.3); background: rgba(165, 94, 234, 0.08); }
+.tag-restored { color: #2ed573; border-color: rgba(46, 213, 115, 0.3); background: rgba(46, 213, 115, 0.08); }
+.tag-target { color: #1e90ff; border-color: rgba(30, 144, 255, 0.3); background: rgba(30, 144, 255, 0.08); }
+
+.card-viewport {
+  width: 100%;
+  aspect-ratio: 1/1;
+  background: #000;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.card-viewport img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  transition: transform 0.5s var(--expo-out);
+}
+
+.card-viewport:hover img {
+  transform: scale(1.03);
+}
+
+/* Drag and Drop Zone */
+.dropzone-overlay {
+  border: 2px dashed var(--border);
+  border-radius: 8px;
+  padding: 2.5rem;
+  text-align: center;
+  background: rgba(17, 20, 31, 0.5);
+  transition: all 0.3s;
+  cursor: pointer;
+}
+
+.dropzone-overlay:hover, .dropzone-overlay.dragover {
+  border-color: var(--cyan-glow);
+  background: rgba(0, 240, 255, 0.04);
+}
+
+/* Footer */
+footer {
+  border-top: 1px solid var(--border);
+  padding: 2rem 2.5rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--gray);
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
 </style>
 </head>
 <body>
+<canvas id="ambientCanvas"></canvas>
+<div class="noise-overlay"></div>
+
 <header>
-  <div class="logo">🛰️ SEN12MS-CR-TS Cloud Removal Studio</div>
-  <div class="badge" id="ckptBadge">Cross-Modal Attention U-Net</div>
+  <div class="logo-group">
+    <div class="logo-mark">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="12" cy="12" r="10" stroke="#00f0ff" stroke-opacity="0.6"/>
+        <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z" stroke="#e9ecee"/>
+        <path d="M2 12h20" stroke="#00e5a3"/>
+      </svg>
+    </div>
+    <div class="logo-text">BADAL <span>// SEN12MS-CR-TS</span></div>
+  </div>
+
+  <div class="header-actions">
+    <div class="badge-model">
+      <span class="status-dot"></span>
+      <span id="ckptBadge">Cross-Attention U-Net</span>
+    </div>
+
+    <button class="sound-toggle" id="soundBtn" onclick="toggleAudio()">
+      <div class="sound-waves">
+        <div class="sound-bar"></div>
+        <div class="sound-bar"></div>
+        <div class="sound-bar"></div>
+        <div class="sound-bar"></div>
+      </div>
+      <span id="soundLabel">SOUND ON</span>
+    </button>
+  </div>
 </header>
+
 <main>
-  <div class="controls-card">
-    <label for="sampleSelect" style="font-weight: 600;">Test Tiles:</label>
-    <select id="sampleSelect" onchange="loadSample()"></select>
-    <button onclick="loadSample()">⚡ Run Removal</button>
-    <button onclick="nextSample()">Next Tile ➡️</button>
-    
-    <label class="upload-btn" style="background: #0369a1; border-color: #0284c7;">
-      📁 Upload Random Image
-      <input type="file" id="fileInput" class="upload-input" accept="image/*" onchange="handleFileUpload(event)">
-    </label>
+  <!-- Hero Header -->
+  <section class="hero-section">
+    <div class="hero-title-group">
+      <h1>Multi-Modal Earth Observation</h1>
+      <p>Synthetic Aperture Radar (SAR) and Optical Sentinel-2 Fusion Engine for Deep Cloud Penetration and Spectral Restoration.</p>
+    </div>
+    <div class="control-cluster">
+      <label class="btn-capsule btn-capsule--cyan">
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+          <polyline points="17 8 12 3 7 8"></polyline>
+          <line x1="12" y1="3" x2="12" y2="15"></line>
+        </svg>
+        Upload Satellite Scene
+        <input type="file" id="fileInput" class="upload-input-hidden" accept="image/*" onchange="handleFileUpload(event)">
+      </label>
+    </div>
+  </section>
 
-    <div class="status-msg" id="statusMsg">Loading dataset...</div>
-  </div>
+  <!-- HUD Controls -->
+  <section class="hud-bar">
+    <div class="control-cluster">
+      <span class="control-label">Region Tile:</span>
+      <select id="sampleSelect" class="custom-select" onchange="loadSample()"></select>
+      <button class="btn-capsule" onclick="loadSample()">⚡ Execute Inference</button>
+      <button class="btn-capsule" onclick="nextSample()">Next Tile ➔</button>
+    </div>
 
-  <div class="stats-grid">
-    <div class="stat-box"><div class="stat-val" id="valPsnr">-- dB</div><div class="stat-label">PSNR Fidelity</div></div>
-    <div class="stat-box"><div class="stat-val" id="valSsim">--</div><div class="stat-label">Structural Similarity (SSIM)</div></div>
-    <div class="stat-box"><div class="stat-val" id="valSam">--°</div><div class="stat-label">Spectral Angle Mapper (SAM)</div></div>
-  </div>
+    <div class="status-telemetry" id="statusMsg">
+      <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+      <span>Telemetry Stream Ready</span>
+    </div>
+  </section>
 
-  <div class="visualizer-container">
-    <div class="img-card">
-      <div class="img-card-header"><span>1. Cloudy Input (True Color RGB)</span><span class="tag-input">Optical</span></div>
-      <div class="img-wrapper"><img id="imgCloudyRgb" src="" alt="Cloudy Optical"></div>
+  <!-- Live Telemetry Matrix -->
+  <section class="telemetry-grid">
+    <div class="telemetry-card">
+      <span class="telemetry-label">Reconstruction PSNR</span>
+      <div class="telemetry-val" id="valPsnr">-- dB</div>
+      <span class="telemetry-sub">High Peak Signal Metric</span>
     </div>
-    <div class="img-card">
-      <div class="img-card-header"><span>2. Sentinel-1 SAR (Radar VV)</span><span class="tag-radar">Radar</span></div>
-      <div class="img-wrapper"><img id="imgSar" src="" alt="SAR Radar"></div>
+    <div class="telemetry-card">
+      <span class="telemetry-label">Structural SSIM</span>
+      <div class="telemetry-val" id="valSsim">--</div>
+      <span class="telemetry-sub">Texture Preservation</span>
     </div>
-    <div class="img-card">
-      <div class="img-card-header"><span>3. Cloud Mask (Detection Map)</span><span class="tag-mask">Mask</span></div>
-      <div class="img-wrapper"><img id="imgMask" src="" alt="Cloud Mask"></div>
+    <div class="telemetry-card">
+      <span class="telemetry-label">Spectral SAM Error</span>
+      <div class="telemetry-val" id="valSam">--°</div>
+      <span class="telemetry-sub">Spectral Angle Mapper</span>
     </div>
-    <div class="img-card">
-      <div class="img-card-header"><span>4. Model Reconstructed RGB</span><span class="tag-output">AI Prediction</span></div>
-      <div class="img-wrapper"><img id="imgPred" src="" alt="Predicted Output"></div>
+    <div class="telemetry-card">
+      <span class="telemetry-label">Radar Penetration</span>
+      <div class="telemetry-val" id="valPenetration">100.0%</div>
+      <span class="telemetry-sub">C-Band SAR VV/VH</span>
     </div>
-    <div class="img-card">
-      <div class="img-card-header"><span>5. Composite Clean Output RGB</span><span class="tag-output">Final Clean</span></div>
-      <div class="img-wrapper"><img id="imgComp" src="" alt="Composite Output"></div>
+  </section>
+
+  <!-- Interactive Curtain Split Before/After Comparator -->
+  <section class="comparator-section">
+    <div class="section-header">
+      <div class="section-title">Interactive Spectral Split Comparator</div>
+      <span class="control-label">Drag slider to reveal clean surface</span>
     </div>
-    <div class="img-card">
-      <div class="img-card-header"><span id="targetLabel">6. Ground Truth Cloud-Free RGB</span><span class="tag-truth">Target</span></div>
-      <div class="img-wrapper"><img id="imgTarget" src="" alt="Ground Truth"></div>
+
+    <div class="split-container" id="splitContainer">
+      <div class="split-layer">
+        <img id="splitCleanImg" src="" alt="Clean Satellite Composite">
+        <div class="layer-badge layer-badge--right">Clean Composite [Restored]</div>
+      </div>
+      <div class="split-overlay" id="splitOverlay">
+        <img id="splitCloudyImg" src="" alt="Cloudy Optical Satellite">
+        <div class="layer-badge layer-badge--left">Cloudy Sentinel-2 [Input]</div>
+      </div>
+      <div class="split-handle" id="splitHandle">⇄</div>
     </div>
-  </div>
+  </section>
+
+  <!-- 6-Grid Multi-Modal Spectral Array -->
+  <section class="array-grid">
+    <div class="spectral-card">
+      <div class="card-header">
+        <span class="card-title">01. Cloudy Sentinel-2 RGB</span>
+        <span class="spectral-tag tag-optical">Optical</span>
+      </div>
+      <div class="card-viewport"><img id="imgCloudyRgb" src="" alt="Cloudy Optical"></div>
+    </div>
+
+    <div class="spectral-card">
+      <div class="card-header">
+        <span class="card-title">02. Sentinel-1 SAR Radar</span>
+        <span class="spectral-tag tag-sar">Radar VV</span>
+      </div>
+      <div class="card-viewport"><img id="imgSar" src="" alt="SAR Radar"></div>
+    </div>
+
+    <div class="spectral-card">
+      <div class="card-header">
+        <span class="card-title">03. Cloud & Shadow Mask</span>
+        <span class="spectral-tag tag-mask">Detection</span>
+      </div>
+      <div class="card-viewport"><img id="imgMask" src="" alt="Cloud Mask"></div>
+    </div>
+
+    <div class="spectral-card">
+      <div class="card-header">
+        <span class="card-title">04. Cross-Attention Prediction</span>
+        <span class="spectral-tag tag-neural">Neural RGB</span>
+      </div>
+      <div class="card-viewport"><img id="imgPred" src="" alt="AI Prediction"></div>
+    </div>
+
+    <div class="spectral-card">
+      <div class="card-header">
+        <span class="card-title">05. Contextual SAR Composite</span>
+        <span class="spectral-tag tag-restored">Final Clean</span>
+      </div>
+      <div class="card-viewport"><img id="imgComp" src="" alt="Composite Clean"></div>
+    </div>
+
+    <div class="spectral-card">
+      <div class="card-header">
+        <span class="card-title" id="targetLabel">06. Ground Truth Cloud-Free</span>
+        <span class="spectral-tag tag-target">Target</span>
+      </div>
+      <div class="card-viewport"><img id="imgTarget" src="" alt="Ground Truth"></div>
+    </div>
+  </section>
 </main>
+
+<footer>
+  <div>BADAL // Advanced Remote Sensing Deep Learning Framework</div>
+  <div>SAR-Optical Cross-Attention U-Net &copy; 2026</div>
+</footer>
+
 <script>
 let totalSamples = 0;
 let currentIndex = 0;
+let soundEnabled = true;
+let audioCtx = null;
 
+// Synthesizer for Overworld-style sonic feedback
+function playBeep(freq = 440, type = 'sine', duration = 0.08) {
+  if (!soundEnabled) return;
+  try {
+    if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+    const osc = audioCtx.createOscillator();
+    const gain = audioCtx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, audioCtx.currentTime);
+    gain.gain.setValueAtTime(0.04, audioCtx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + duration);
+    osc.connect(gain);
+    gain.connect(audioCtx.destination);
+    osc.start();
+    osc.stop(audioCtx.currentTime + duration);
+  } catch(e){}
+}
+
+function toggleAudio() {
+  soundEnabled = !soundEnabled;
+  const btn = document.getElementById('soundBtn');
+  const label = document.getElementById('soundLabel');
+  if (soundEnabled) {
+    btn.classList.remove('muted');
+    label.innerText = 'SOUND ON';
+    playBeep(880, 'sine', 0.1);
+  } else {
+    btn.classList.add('muted');
+    label.innerText = 'SOUND OFF';
+  }
+}
+
+// Interactive Before/After Split Slider
+const splitContainer = document.getElementById('splitContainer');
+const splitOverlay = document.getElementById('splitOverlay');
+const splitHandle = document.getElementById('splitHandle');
+let isSliding = false;
+
+function updateSplit(x) {
+  const rect = splitContainer.getBoundingClientRect();
+  let pos = (x - rect.left) / rect.width;
+  pos = Math.max(0.01, Math.min(0.99, pos));
+  splitOverlay.style.width = (pos * 100) + '%';
+  splitHandle.style.left = (pos * 100) + '%';
+}
+
+splitContainer.addEventListener('mousedown', (e) => {
+  isSliding = true;
+  updateSplit(e.clientX);
+  playBeep(520, 'triangle', 0.05);
+});
+window.addEventListener('mouseup', () => isSliding = false);
+window.addEventListener('mousemove', (e) => {
+  if (isSliding) updateSplit(e.clientX);
+});
+
+// Ambient Particles Canvas (Orbital radar aesthetics)
+const canvas = document.getElementById('ambientCanvas');
+const ctx = canvas.getContext('2d');
+let particles = [];
+
+function resizeCanvas() {
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+}
+window.addEventListener('resize', resizeCanvas);
+resizeCanvas();
+
+for (let i = 0; i < 45; i++) {
+  particles.push({
+    x: Math.random() * canvas.width,
+    y: Math.random() * canvas.height,
+    vx: (Math.random() - 0.5) * 0.3,
+    vy: (Math.random() - 0.5) * 0.3,
+    r: Math.random() * 1.5 + 0.5,
+    alpha: Math.random() * 0.5 + 0.2
+  });
+}
+
+function renderCanvas() {
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.fillStyle = '#00f0ff';
+  particles.forEach(p => {
+    p.x += p.vx;
+    p.y += p.vy;
+    if (p.x < 0) p.x = canvas.width;
+    if (p.x > canvas.width) p.x = 0;
+    if (p.y < 0) p.y = canvas.height;
+    if (p.y > canvas.height) p.y = 0;
+    ctx.globalAlpha = p.alpha;
+    ctx.beginPath();
+    ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
+    ctx.fill();
+  });
+  requestAnimationFrame(renderCanvas);
+}
+renderCanvas();
+
+// Visualizer API interaction
 async function init() {
   try {
     const res = await fetch('/api/samples');
@@ -414,40 +1255,38 @@ async function init() {
     for(let i=0; i<totalSamples; i++) {
       const opt = document.createElement('option');
       opt.value = i;
-      opt.innerText = `Satellite Tile #${i+1}`;
+      opt.innerText = `Region Tile #${i+1}`;
       select.appendChild(opt);
     }
-    document.getElementById('statusMsg').innerText = `Ready (${totalSamples} tiles loaded)`;
+    document.getElementById('statusMsg').innerHTML = `<span>Active: ${totalSamples} Tiles Loaded</span>`;
     if (totalSamples > 0) {
       loadSample();
     }
   } catch (err) {
-    document.getElementById('statusMsg').innerText = `Error: ${err.message}`;
+    document.getElementById('statusMsg').innerText = `Init Error: ${err.message}`;
   }
 }
 
 async function loadSample() {
   const select = document.getElementById('sampleSelect');
-  if (!select.value && select.options.length > 0) {
-    select.value = 0;
-  }
+  if (!select.value && select.options.length > 0) select.value = 0;
   currentIndex = parseInt(select.value || 0);
-  document.getElementById('targetLabel').innerText = "6. Ground Truth Cloud-Free RGB";
-  document.getElementById('statusMsg').innerText = `Inferencing tile #${currentIndex + 1}...`;
+  document.getElementById('targetLabel').innerText = "06. Ground Truth Cloud-Free";
+  document.getElementById('statusMsg').innerHTML = `<span>Processing Tile #${currentIndex + 1}...</span>`;
+  playBeep(440, 'sine', 0.05);
 
   try {
     const res = await fetch(`/api/sample/${currentIndex}`);
     const data = await res.json();
-
     if (data.error) {
       document.getElementById('statusMsg').innerText = `Error: ${data.error}`;
       return;
     }
-
     renderData(data);
-    document.getElementById('statusMsg').innerText = `Tile #${currentIndex + 1} processed successfully`;
+    document.getElementById('statusMsg').innerHTML = `<span>Tile #${currentIndex + 1} Restored</span>`;
+    playBeep(660, 'sine', 0.08);
   } catch (err) {
-    document.getElementById('statusMsg').innerText = `Failed to load: ${err.message}`;
+    document.getElementById('statusMsg').innerText = `Load Error: ${err.message}`;
   }
 }
 
@@ -462,8 +1301,9 @@ async function handleFileUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
 
-  document.getElementById('statusMsg').innerText = `Processing uploaded image '${file.name}'...`;
-  document.getElementById('targetLabel').innerText = "6. Reconstructed Composite (Clean)";
+  document.getElementById('statusMsg').innerHTML = `<span>Inpainting '${file.name}' with SAR guidance...</span>`;
+  document.getElementById('targetLabel').innerText = "06. Reconstructed Composite";
+  playBeep(330, 'triangle', 0.1);
 
   const reader = new FileReader();
   reader.onload = async function(e) {
@@ -480,9 +1320,10 @@ async function handleFileUpload(event) {
         return;
       }
       renderData(data);
-      document.getElementById('statusMsg').innerText = `Custom image '${file.name}' restored successfully!`;
+      document.getElementById('statusMsg').innerHTML = `<span>Scene '${file.name}' Restored</span>`;
+      playBeep(880, 'sine', 0.15);
     } catch (err) {
-      document.getElementById('statusMsg').innerText = `Upload failed: ${err.message}`;
+      document.getElementById('statusMsg').innerText = `Upload Error: ${err.message}`;
     }
   };
   reader.readAsDataURL(file);
@@ -499,6 +1340,10 @@ function renderData(data) {
   document.getElementById('imgPred').src = data.images.pred_rgb;
   document.getElementById('imgComp').src = data.images.comp_rgb;
   document.getElementById('imgTarget').src = data.images.target_rgb;
+
+  // Update Split Comparator
+  document.getElementById('splitCloudyImg').src = data.images.cloudy_rgb;
+  document.getElementById('splitCleanImg').src = data.images.comp_rgb;
 }
 
 window.onload = init;
