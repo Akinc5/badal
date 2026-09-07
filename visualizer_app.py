@@ -316,6 +316,7 @@ HTML_TEMPLATE = """<!DOCTYPE html>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500;600&family=Space+Grotesk:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<script type="module" src="https://unpkg.com/@splinetool/viewer@1.9.72/build/spline-viewer.js"></script>
 <style>
 :root {
   --off-black: #0a0c12;
@@ -344,6 +345,10 @@ HTML_TEMPLATE = """<!DOCTYPE html>
   padding: 0;
 }
 
+html {
+  scroll-behavior: smooth;
+}
+
 body {
   background-color: var(--off-black);
   color: var(--off-white);
@@ -365,7 +370,7 @@ body {
   height: 100vh;
   pointer-events: none;
   z-index: 0;
-  opacity: 0.6;
+  opacity: 0.5;
 }
 
 .noise-overlay {
@@ -382,14 +387,16 @@ body {
 
 /* Header & Navigation */
 header {
-  position: sticky;
+  position: fixed;
   top: 0;
+  left: 0;
+  width: 100%;
   z-index: 100;
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
-  background: rgba(10, 12, 18, 0.85);
+  background: rgba(10, 12, 18, 0.75);
   border-bottom: 1px solid var(--border);
-  padding: 1.25rem 2.5rem;
+  padding: 1.1rem 2.5rem;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -516,7 +523,174 @@ header {
   50% { opacity: 0.4; transform: scale(0.85); }
 }
 
-/* Main Layout */
+/* =========================================================
+   SPLINE 3D OPENING HERO SCREEN
+   ========================================================= */
+.spline-hero-stage {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  min-height: 700px;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: radial-gradient(circle at 50% 40%, #151928 0%, #0a0c12 70%);
+}
+
+.spline-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 5;
+}
+
+.spline-vignette {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 6;
+  background: linear-gradient(180deg, rgba(10,12,18,0.4) 0%, transparent 20%, transparent 70%, #0a0c12 100%);
+}
+
+.spline-hero-overlay {
+  position: relative;
+  z-index: 10;
+  pointer-events: none;
+  text-align: center;
+  max-width: 900px;
+  padding: 0 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: -3vh;
+}
+
+.spline-brand-pill {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.3em;
+  text-transform: uppercase;
+  color: var(--cyan-glow);
+  background: rgba(0, 240, 255, 0.08);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  padding: 0.45rem 1.2rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  gap: 0.6rem;
+  backdrop-filter: blur(10px);
+}
+
+.spline-title {
+  font-family: var(--font-serif);
+  font-size: clamp(3rem, 6.5vw, 5.5rem);
+  font-weight: 700;
+  letter-spacing: 0.15em;
+  line-height: 1;
+  text-transform: uppercase;
+  background: linear-gradient(180deg, #ffffff 0%, #aab9c7 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  filter: drop-shadow(0 10px 30px rgba(0, 240, 255, 0.2));
+}
+
+.spline-subtitle {
+  font-family: var(--font-sans);
+  font-size: clamp(0.9rem, 1.4vw, 1.2rem);
+  letter-spacing: 0.08em;
+  color: var(--color-secondary);
+  max-width: 680px;
+  line-height: 1.6;
+}
+
+.spline-actions {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-top: 1rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.spline-telemetry-strip {
+  display: flex;
+  gap: 1.5rem;
+  margin-top: 2rem;
+  flex-wrap: wrap;
+  justify-content: center;
+}
+
+.telemetry-pill {
+  background: rgba(17, 20, 31, 0.7);
+  backdrop-filter: blur(12px);
+  border: 1px solid var(--border);
+  padding: 0.6rem 1rem;
+  border-radius: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+}
+
+.telemetry-pill span {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.2em;
+  color: var(--gray);
+}
+
+.telemetry-pill strong {
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  color: var(--off-white);
+  margin-top: 2px;
+}
+
+.scroll-prompt {
+  position: absolute;
+  bottom: 2rem;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.6rem;
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.3em;
+  color: var(--gray);
+  cursor: pointer;
+  pointer-events: auto;
+  transition: color 0.3s;
+}
+
+.scroll-prompt:hover {
+  color: var(--cyan-glow);
+}
+
+.scroll-indicator {
+  width: 1px;
+  height: 24px;
+  background: linear-gradient(180deg, var(--cyan-glow), transparent);
+  animation: scrollAnim 1.8s infinite;
+}
+
+@keyframes scrollAnim {
+  0% { transform: scaleY(0); transform-origin: top; }
+  50% { transform: scaleY(1); transform-origin: top; }
+  50.1% { transform: scaleY(1); transform-origin: bottom; }
+  100% { transform: scaleY(0); transform-origin: bottom; }
+}
+
+/* =========================================================
+   STUDIO MAIN WORKSPACE
+   ========================================================= */
 main {
   position: relative;
   z-index: 10;
@@ -524,7 +698,7 @@ main {
   max-width: 1540px;
   margin: 0 auto;
   width: 100%;
-  padding: 2.5rem 2rem 5rem;
+  padding: 3rem 2rem 5rem;
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
@@ -541,9 +715,9 @@ main {
   gap: 1.5rem;
 }
 
-.hero-title-group h1 {
+.hero-title-group h2 {
   font-family: var(--font-serif);
-  font-size: clamp(2rem, 3.5vw, 3.2rem);
+  font-size: clamp(1.8rem, 3vw, 2.8rem);
   font-weight: 500;
   letter-spacing: 0.05em;
   line-height: 1.1;
@@ -933,22 +1107,6 @@ select.custom-select:focus {
   transform: scale(1.03);
 }
 
-/* Drag and Drop Zone */
-.dropzone-overlay {
-  border: 2px dashed var(--border);
-  border-radius: 8px;
-  padding: 2.5rem;
-  text-align: center;
-  background: rgba(17, 20, 31, 0.5);
-  transition: all 0.3s;
-  cursor: pointer;
-}
-
-.dropzone-overlay:hover, .dropzone-overlay.dragover {
-  border-color: var(--cyan-glow);
-  background: rgba(0, 240, 255, 0.04);
-}
-
 /* Footer */
 footer {
   border-top: 1px solid var(--border);
@@ -998,11 +1156,50 @@ footer {
   </div>
 </header>
 
-<main>
+<!-- Spline 3D Opening Screen -->
+<section class="spline-hero-stage">
+  <spline-viewer url="https://prod.spline.design/l9NMbyl2gjzInnR9/scene.splinecode" class="spline-canvas"></spline-viewer>
+  <div class="spline-vignette"></div>
+
+  <div class="spline-hero-overlay">
+    <div class="spline-brand-pill">
+      <span class="status-dot"></span> ORBITAL SYNTHETIC APERTURE RADAR (SAR)
+    </div>
+    <h1 class="spline-title">BADAL</h1>
+    <p class="spline-subtitle">Multi-Modal Earth Observation & Deep Cloud Penetration Engine with Cross-Attention Fusion.</p>
+
+    <div class="spline-actions">
+      <a href="#studioSection" class="btn-capsule btn-capsule--cyan" onclick="scrollToStudio(event)">
+        ENTER STUDIO
+        <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+          <path d="M7 13l5 5 5-5M12 4v14"/>
+        </svg>
+      </a>
+      <label class="btn-capsule">
+        UPLOAD SATELLITE SCENE
+        <input type="file" class="upload-input-hidden" accept="image/*" onchange="handleFileUpload(event)">
+      </label>
+    </div>
+
+    <div class="spline-telemetry-strip">
+      <div class="telemetry-pill"><span>RADAR SENSOR</span><strong>Sentinel-1 C-Band (VV/VH)</strong></div>
+      <div class="telemetry-pill"><span>OPTICAL SENSOR</span><strong>Sentinel-2 (13 Bands)</strong></div>
+      <div class="telemetry-pill"><span>AI ARCHITECTURE</span><strong>Cross-Attention U-Net</strong></div>
+    </div>
+  </div>
+
+  <div class="scroll-prompt" onclick="scrollToStudio(event)">
+    <span>SCROLL TO EXPLORE</span>
+    <div class="scroll-indicator"></div>
+  </div>
+</section>
+
+<!-- Interactive Studio Main Section -->
+<main id="studioSection">
   <!-- Hero Header -->
   <section class="hero-section">
     <div class="hero-title-group">
-      <h1>Multi-Modal Earth Observation</h1>
+      <h2>Spectral Fusion Workspace</h2>
       <p>Synthetic Aperture Radar (SAR) and Optical Sentinel-2 Fusion Engine for Deep Cloud Penetration and Spectral Restoration.</p>
     </div>
     <div class="control-cluster">
@@ -1142,6 +1339,13 @@ let totalSamples = 0;
 let currentIndex = 0;
 let soundEnabled = true;
 let audioCtx = null;
+
+function scrollToStudio(e) {
+  if (e) e.preventDefault();
+  const el = document.getElementById('studioSection');
+  if (el) el.scrollIntoView({ behavior: 'smooth' });
+  playBeep(520, 'sine', 0.08);
+}
 
 // Synthesizer for Overworld-style sonic feedback
 function playBeep(freq = 440, type = 'sine', duration = 0.08) {
@@ -1300,6 +1504,9 @@ function nextSample() {
 async function handleFileUpload(event) {
   const file = event.target.files[0];
   if (!file) return;
+
+  // Auto-scroll to studio section upon upload
+  scrollToStudio();
 
   document.getElementById('statusMsg').innerHTML = `<span>Inpainting '${file.name}' with SAR guidance...</span>`;
   document.getElementById('targetLabel').innerText = "06. Reconstructed Composite";
