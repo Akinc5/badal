@@ -1817,7 +1817,7 @@ def main():
     parser.add_argument("--model", type=str, default="cross_attention_unet")
     parser.add_argument("--dataroot", type=str, default="./SEN12MSCRTS")
     parser.add_argument("--region", type=str, default="asiaWest")
-    parser.add_argument("--port", type=int, default=8080)
+    parser.add_argument("--port", type=int, default=int(os.environ.get("PORT", 7860)))
     parser.add_argument("--dummy_data", action="store_true")
     args = parser.parse_args()
 

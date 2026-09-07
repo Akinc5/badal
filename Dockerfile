@@ -1,31 +1,24 @@
-FROM pytorch/pytorch:latest
-    
-# note: as of now, pytorch/pytorch:latest is not compiled for CUDA > 11.3 yet,
-# if you run CUDA > 11.3 please consider base image nvcr.io/nvidia/pytorch:latest
-# on NGS: https://catalog.ngc.nvidia.com/orgs/nvidia/containers/pytorch
+FROM python:3.10-slim
 
-# in case you run CUDA > 11.3 and prefer pytorch/pytorch:latest, then consider this conda-forge build:
-# RUN conda install pytorch torchvision torchaudio cudatoolkit=11.6 -c pytorch -c conda-forge
+WORKDIR /app
 
-# install dependencies
-RUN conda install -c conda-forge cupy  
-RUN conda install -c conda-forge opencv
-RUN pip install scipy rasterio natsort matplotlib scikit-image tqdm natsort
-RUN pip install s2cloudless
-RUN conda install pillow=6.1
-RUN pip install dominate
-RUN pip install visdom
+# Install system dependencies for OpenCV
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libgl1-mesa-glx \
+    libglib2.0-0 \
+    git \
+    && rm -rf /var/lib/apt/lists/*
 
-# bake repository into dockerfile
-RUN mkdir -p ./data
-RUN mkdir -p ./models
-RUN mkdir -p ./options
-RUN mkdir -p ./util
+# Install Python requirements
+COPY requirements.txt .
+RUN pip install --no-cache-dir -r requirements.txt
 
-ADD data ./data
-ADD models ./models
-ADD options ./options
-ADD util ./util
-ADD . ./
+# Copy application source
+COPY . .
 
-WORKDIR /workspace
+# Expose default port
+EXPOSE 7860
+ENV PORT=7860
+
+# Launch Visualizer Studio
+CMD ["python", "visualizer_app.py", "--checkpoint", "./checkpoints_adv/best_checkpoint.pth"]
