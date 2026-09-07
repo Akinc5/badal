@@ -238,6 +238,36 @@ class CloudRemovalAPIHandler(SimpleHTTPRequestHandler):
             self.send_header("Content-type", "image/svg+xml")
             self.end_headers()
             self.wfile.write(svg_favicon.encode("utf-8"))
+        elif self.path.startswith("/audio/"):
+            # Serve local audio files (e.g. /audio/lose_my_mind.mp3 or /audio/bgm.mp3)
+            audio_filename = self.path[len("/audio/"):]
+            candidates = [
+                os.path.join(".", "audio", audio_filename),
+                os.path.join(".", audio_filename),
+                os.path.join(".", "audio", "lose_my_mind.mp3"),
+                os.path.join(".", "lose_my_mind.mp3"),
+                os.path.join(".", "audio", "bgm.mp3"),
+                os.path.join(".", "bgm.mp3")
+            ]
+            served = False
+            for cand in candidates:
+                if os.path.exists(cand) and os.path.isfile(cand):
+                    try:
+                        with open(cand, 'rb') as f:
+                            audio_data = f.read()
+                        self.send_response(200)
+                        self.send_header("Content-type", "audio/mpeg")
+                        self.send_header("Content-Length", str(len(audio_data)))
+                        self.send_header("Accept-Ranges", "bytes")
+                        self.end_headers()
+                        self.wfile.write(audio_data)
+                        served = True
+                        break
+                    except Exception as err:
+                        print(f"[Audio Serve Error]: {err}")
+            if not served:
+                self.send_response(404)
+                self.end_headers()
         elif self.path == "/api/samples":
             self.send_response(200)
             self.send_header("Content-type", "application/json; charset=utf-8")
@@ -516,6 +546,47 @@ header {
   display: flex;
   align-items: center;
   gap: 0.5rem;
+}
+
+.track-pill {
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.1em;
+  color: var(--color-secondary);
+  background: rgba(17, 20, 31, 0.8);
+  border: 1px solid var(--border);
+  border-radius: 4px;
+  padding: 0.35rem 0.75rem;
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  backdrop-filter: blur(10px);
+}
+
+.track-dot {
+  width: 5px;
+  height: 5px;
+  border-radius: 50%;
+  background: var(--cyan-glow);
+  box-shadow: 0 0 6px var(--cyan-glow);
+}
+
+.track-select-btn {
+  font-family: var(--font-mono);
+  font-size: 0.6rem;
+  letter-spacing: 0.1em;
+  color: var(--cyan-glow);
+  background: rgba(0, 240, 255, 0.1);
+  border: 1px solid rgba(0, 240, 255, 0.25);
+  padding: 0.2rem 0.5rem;
+  border-radius: 3px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.track-select-btn:hover {
+  background: var(--cyan-glow);
+  color: var(--off-black);
 }
 
 .status-dot {
@@ -1183,6 +1254,16 @@ footer {
       <span id="ckptBadge">Cross-Attention U-Net</span>
     </div>
 
+    <!-- Track Selector & Player -->
+    <div class="track-pill" id="trackPill">
+      <span class="track-dot"></span>
+      <span id="trackName">🎵 Doja Cat - Lose My Mind</span>
+      <label class="track-select-btn" title="Choose local song or MP3">
+        Select MP3
+        <input type="file" id="songInput" accept="audio/*" class="upload-input-hidden" onchange="handleSongUpload(event)">
+      </label>
+    </div>
+
     <button class="sound-toggle" id="soundBtn" onclick="toggleAudio()">
       <div class="sound-waves">
         <div class="sound-bar"></div>
@@ -1194,6 +1275,11 @@ footer {
     </button>
   </div>
 </header>
+
+<audio id="bgMusic" loop preload="auto">
+  <source src="/audio/lose_my_mind.mp3" type="audio/mpeg">
+  <source src="/audio/bgm.mp3" type="audio/mpeg">
+</audio>
 
 <!-- Spline 3D Opening Hero Stage (Parallax Enabled) -->
 <section class="spline-hero-stage">
@@ -1408,14 +1494,46 @@ function toggleAudio() {
   soundEnabled = !soundEnabled;
   const btn = document.getElementById('soundBtn');
   const label = document.getElementById('soundLabel');
+  const bgAudio = document.getElementById('bgMusic');
+
   if (soundEnabled) {
     btn.classList.remove('muted');
     label.innerText = 'SOUND ON';
     playBeep(880, 'sine', 0.1);
+
+    if (bgAudio) {
+      bgAudio.volume = 0.35;
+      bgAudio.play().catch(e => {
+        console.log('[Audio auto-play note]: click page to activate background music or select an MP3 file.', e);
+      });
+    }
   } else {
     btn.classList.add('muted');
     label.innerText = 'SOUND OFF';
+    if (bgAudio) {
+      bgAudio.pause();
+    }
   }
+}
+
+function handleSongUpload(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  const bgAudio = document.getElementById('bgMusic');
+  const trackName = document.getElementById('trackName');
+  if (bgAudio) {
+    const objectUrl = URL.createObjectURL(file);
+    bgAudio.src = objectUrl;
+    bgAudio.volume = 0.35;
+    if (soundEnabled) {
+      bgAudio.play().catch(e => console.log(e));
+    }
+  }
+  if (trackName) {
+    trackName.innerText = `🎵 ${file.name.replace(/\.[^/.]+$/, "")}`;
+  }
+  playBeep(880, 'sine', 0.15);
 }
 
 // =========================================================
