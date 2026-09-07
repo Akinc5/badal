@@ -231,6 +231,13 @@ class CloudRemovalAPIHandler(SimpleHTTPRequestHandler):
             self.send_header("Content-type", "text/html; charset=utf-8")
             self.end_headers()
             self.wfile.write(HTML_TEMPLATE.encode("utf-8"))
+        elif self.path == "/favicon.ico":
+            # Serve satellite SVG favicon
+            svg_favicon = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="#00f0ff"><circle cx="12" cy="12" r="10"/></svg>'
+            self.send_response(200)
+            self.send_header("Content-type", "image/svg+xml")
+            self.end_headers()
+            self.wfile.write(svg_favicon.encode("utf-8"))
         elif self.path == "/api/samples":
             self.send_response(200)
             self.send_header("Content-type", "application/json; charset=utf-8")
@@ -371,6 +378,7 @@ body {
   pointer-events: none;
   z-index: 0;
   opacity: 0.5;
+  will-change: transform;
 }
 
 .noise-overlay {
@@ -400,6 +408,7 @@ header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  transition: all 0.4s var(--expo-out);
 }
 
 .logo-group {
@@ -524,7 +533,7 @@ header {
 }
 
 /* =========================================================
-   SPLINE 3D OPENING HERO SCREEN
+   SPLINE 3D OPENING HERO STAGE (PARALLAX DEPTH)
    ========================================================= */
 .spline-hero-stage {
   position: relative;
@@ -536,6 +545,7 @@ header {
   align-items: center;
   justify-content: center;
   background: radial-gradient(circle at 50% 40%, #151928 0%, #0a0c12 70%);
+  perspective: 1200px;
 }
 
 .spline-canvas {
@@ -545,6 +555,8 @@ header {
   width: 100%;
   height: 100%;
   z-index: 5;
+  will-change: transform, opacity;
+  transform-origin: center center;
 }
 
 .spline-vignette {
@@ -567,6 +579,8 @@ header {
   align-items: center;
   gap: 1.25rem;
   margin-top: -3vh;
+  will-change: transform, opacity, filter;
+  transition: transform 0.1s ease-out;
 }
 
 .spline-brand-pill {
@@ -635,6 +649,11 @@ header {
   flex-direction: column;
   align-items: flex-start;
   text-align: left;
+  transition: transform 0.3s var(--expo-out);
+}
+.telemetry-pill:hover {
+  transform: translateY(-2px);
+  border-color: rgba(0, 240, 255, 0.4);
 }
 
 .telemetry-pill span {
@@ -667,7 +686,7 @@ header {
   color: var(--gray);
   cursor: pointer;
   pointer-events: auto;
-  transition: color 0.3s;
+  transition: color 0.3s, opacity 0.3s;
 }
 
 .scroll-prompt:hover {
@@ -689,7 +708,7 @@ header {
 }
 
 /* =========================================================
-   STUDIO MAIN WORKSPACE
+   STUDIO MAIN WORKSPACE & PARALLAX REVEALS
    ========================================================= */
 main {
   position: relative;
@@ -702,6 +721,18 @@ main {
   display: flex;
   flex-direction: column;
   gap: 2.5rem;
+}
+
+/* Parallax Fade & Lift Effect */
+.parallax-fade {
+  opacity: 0;
+  transform: translateY(40px);
+  transition: opacity 0.8s var(--expo-out), transform 0.8s var(--expo-out);
+  will-change: opacity, transform;
+}
+.parallax-fade.is-visible {
+  opacity: 1;
+  transform: translateY(0);
 }
 
 /* Hero Title Section */
@@ -872,6 +903,13 @@ select.custom-select:focus {
   gap: 0.4rem;
   position: relative;
   overflow: hidden;
+  transition: transform 0.3s var(--expo-out), box-shadow 0.3s ease;
+  transform-style: preserve-3d;
+}
+
+.telemetry-card:hover {
+  border-color: rgba(0, 240, 255, 0.3);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
 }
 
 .telemetry-card::before {
@@ -918,6 +956,7 @@ select.custom-select:focus {
   display: flex;
   flex-direction: column;
   gap: 1.2rem;
+  box-shadow: 0 15px 40px rgba(0,0,0,0.4);
 }
 
 .section-header {
@@ -1041,12 +1080,12 @@ select.custom-select:focus {
   display: flex;
   flex-direction: column;
   transition: all 0.3s var(--expo-out);
+  transform-style: preserve-3d;
 }
 
 .spectral-card:hover {
-  border-color: rgba(233, 236, 238, 0.3);
-  transform: translateY(-2px);
-  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+  border-color: rgba(0, 240, 255, 0.4);
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.6);
 }
 
 .card-header {
@@ -1104,7 +1143,7 @@ select.custom-select:focus {
 }
 
 .card-viewport:hover img {
-  transform: scale(1.03);
+  transform: scale(1.04);
 }
 
 /* Footer */
@@ -1126,7 +1165,7 @@ footer {
 <canvas id="ambientCanvas"></canvas>
 <div class="noise-overlay"></div>
 
-<header>
+<header id="mainHeader">
   <div class="logo-group">
     <div class="logo-mark">
       <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
@@ -1156,7 +1195,7 @@ footer {
   </div>
 </header>
 
-<!-- Spline 3D Opening Screen -->
+<!-- Spline 3D Opening Hero Stage (Parallax Enabled) -->
 <section class="spline-hero-stage">
   <spline-viewer url="https://prod.spline.design/l9NMbyl2gjzInnR9/scene.splinecode" class="spline-canvas"></spline-viewer>
   <div class="spline-vignette"></div>
@@ -1197,7 +1236,7 @@ footer {
 <!-- Interactive Studio Main Section -->
 <main id="studioSection">
   <!-- Hero Header -->
-  <section class="hero-section">
+  <section class="hero-section parallax-fade">
     <div class="hero-title-group">
       <h2>Spectral Fusion Workspace</h2>
       <p>Synthetic Aperture Radar (SAR) and Optical Sentinel-2 Fusion Engine for Deep Cloud Penetration and Spectral Restoration.</p>
@@ -1216,7 +1255,7 @@ footer {
   </section>
 
   <!-- HUD Controls -->
-  <section class="hud-bar">
+  <section class="hud-bar parallax-fade">
     <div class="control-cluster">
       <span class="control-label">Region Tile:</span>
       <select id="sampleSelect" class="custom-select" onchange="loadSample()"></select>
@@ -1234,7 +1273,7 @@ footer {
   </section>
 
   <!-- Live Telemetry Matrix -->
-  <section class="telemetry-grid">
+  <section class="telemetry-grid parallax-fade">
     <div class="telemetry-card">
       <span class="telemetry-label">Reconstruction PSNR</span>
       <div class="telemetry-val" id="valPsnr">-- dB</div>
@@ -1258,7 +1297,7 @@ footer {
   </section>
 
   <!-- Interactive Curtain Split Before/After Comparator -->
-  <section class="comparator-section">
+  <section class="comparator-section parallax-fade">
     <div class="section-header">
       <div class="section-title">Interactive Spectral Split Comparator</div>
       <span class="control-label">Drag slider to reveal clean surface</span>
@@ -1278,7 +1317,7 @@ footer {
   </section>
 
   <!-- 6-Grid Multi-Modal Spectral Array -->
-  <section class="array-grid">
+  <section class="array-grid parallax-fade">
     <div class="spectral-card">
       <div class="card-header">
         <span class="card-title">01. Cloudy Sentinel-2 RGB</span>
@@ -1378,6 +1417,98 @@ function toggleAudio() {
     label.innerText = 'SOUND OFF';
   }
 }
+
+// =========================================================
+// HARDWARE-ACCELERATED PARALLAX ENGINE (60+ FPS)
+// =========================================================
+const splineCanvas = document.querySelector('.spline-canvas');
+const splineOverlay = document.querySelector('.spline-hero-overlay');
+const scrollPrompt = document.querySelector('.scroll-prompt');
+const ambientCanvas = document.getElementById('ambientCanvas');
+const mainHeader = document.getElementById('mainHeader');
+
+let ticking = false;
+
+function updateParallaxScroll() {
+  const scrollY = window.scrollY;
+  const heroHeight = window.innerHeight;
+
+  if (scrollY <= heroHeight * 1.4) {
+    const progress = scrollY / heroHeight;
+
+    // Spline 3D Scene translation & scale depth
+    if (splineCanvas) {
+      splineCanvas.style.transform = `translate3d(0, ${scrollY * 0.42}px, 0) scale(${1 + progress * 0.15})`;
+      splineCanvas.style.opacity = Math.max(0, 1 - progress * 1.15);
+    }
+
+    // Hero Text Layer floats up faster with depth blur
+    if (splineOverlay) {
+      splineOverlay.style.transform = `translate3d(0, ${scrollY * 0.65}px, 0) scale(${Math.max(0.78, 1 - progress * 0.28)})`;
+      splineOverlay.style.opacity = Math.max(0, 1 - progress * 1.35);
+      splineOverlay.style.filter = `blur(${progress * 14}px)`;
+    }
+
+    // Scroll prompt fade
+    if (scrollPrompt) {
+      scrollPrompt.style.opacity = Math.max(0, 1 - scrollY / 130);
+    }
+  }
+
+  // Ambient Starfield Parallax Drift
+  if (ambientCanvas) {
+    ambientCanvas.style.transform = `translate3d(0, ${scrollY * 0.18}px, 0)`;
+  }
+
+  // Header background density on scroll
+  if (mainHeader) {
+    if (scrollY > 80) {
+      mainHeader.style.background = 'rgba(10, 12, 18, 0.95)';
+      mainHeader.style.boxShadow = '0 10px 30px rgba(0,0,0,0.5)';
+    } else {
+      mainHeader.style.background = 'rgba(10, 12, 18, 0.75)';
+      mainHeader.style.boxShadow = 'none';
+    }
+  }
+
+  ticking = false;
+}
+
+window.addEventListener('scroll', () => {
+  if (!ticking) {
+    window.requestAnimationFrame(updateParallaxScroll);
+    ticking = true;
+  }
+}, { passive: true });
+
+// Intersection Observer for Smooth Section Stagger & Lift
+const revealObserver = new IntersectionObserver((entries) => {
+  entries.forEach(entry => {
+    if (entry.isIntersecting) {
+      entry.target.classList.add('is-visible');
+    }
+  });
+}, { threshold: 0.1, rootMargin: '0px 0px -40px 0px' });
+
+document.querySelectorAll('.parallax-fade').forEach((el, i) => {
+  el.style.transitionDelay = `${(i % 3) * 0.1}s`;
+  revealObserver.observe(el);
+});
+
+// 3D Card Hover Perspective Tilt
+document.querySelectorAll('.spectral-card, .telemetry-card').forEach(card => {
+  card.addEventListener('mousemove', (e) => {
+    const rect = card.getBoundingClientRect();
+    const x = e.clientX - rect.left - rect.width / 2;
+    const y = e.clientY - rect.top - rect.height / 2;
+    const rotX = -(y / (rect.height / 2)) * 6;
+    const rotY = (x / (rect.width / 2)) * 6;
+    card.style.transform = `perspective(900px) rotateX(${rotX.toFixed(2)}deg) rotateY(${rotY.toFixed(2)}deg) translateY(-4px)`;
+  });
+  card.addEventListener('mouseleave', () => {
+    card.style.transform = '';
+  });
+});
 
 // Interactive Before/After Split Slider
 const splitContainer = document.getElementById('splitContainer');
