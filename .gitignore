@@ -6,9 +6,7 @@ __pycache__/
 
 # Model checkpoints and weights (large files)
 checkpoints/
-checkpoints_adv/
-checkpoints_test/
-checkpoints_adv_test/
+checkpoints_*/
 *.pth
 *.pt
 *.onnx
@@ -23,13 +21,20 @@ SEN12MSCR/
 
 # Output benchmark results and test folders
 benchmark_results/
-benchmark_results_test/
-results_eval/
-results_test/
+benchmark_results_*/
 results/
+results_*/
 
-# Environment / IDE
+# Audio media files
+audio/*.mp3
+audio/*.wav
+audio/*.ogg
+audio/*.m4a
+audio/*.flac
+*.mp3
+*.wav
+
+# Environment / IDE / Temporary logs
 .vscode/
 .idea/
 *.log
-
